@@ -46,6 +46,7 @@ class Account
     /**
      * Authenticates this user with given credential
      * @param \Void\Account\Credential $credential
+     * @throws \Exception When unable to authenticate with given credential
      **/
     public function authenticate( Account\Credential $credential )
     {
@@ -55,7 +56,7 @@ class Account
         $result = $auth->authenticate( $adapter );
         $this->authenticated = $result->isValid();
         if ( !$result->isValid() ) {
-            throw new Exception( $result->getMessage() );
+            throw new \Exception( array_shift( $result->getMessages() ), $result->getCode() );
         }
     }
 
