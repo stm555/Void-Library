@@ -59,6 +59,13 @@ class Account
         }
     }
 
+    public function clearAuthentication()
+    {
+        if ( $this->isAuthenticated() ) {
+            Account::getAuthenticationService()->clearIdentity();
+        }
+    }
+
     protected static function getAuthenticationService()
     {
         return new AuthenticationService();
