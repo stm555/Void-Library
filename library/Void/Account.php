@@ -3,12 +3,11 @@ namespace Void;
 
 use Zend\Authentication\AuthenticationService;
 
-class Account
+Abstract class Account
 {
     public $userName;
 
     protected $authenticated = false;
-
 
     public function __construct( $userName = null )
     {
@@ -20,28 +19,42 @@ class Account
     /**
      * Grabs a given account.
      * If no specific account is requested, it will attempt to load
-     * an account from the Authentication Service storate (ie, session)
+     * an account from the Authentication Service storage (ie, session)
      * If none is available there, it will return an unauthenticated account
      *
      * @param mixed $userId User Identifier
      * @return Account Instantiated Account object
      **/
     public static function get( $userId = null ) {
+        $className = static::who();
         if ( isset( $userId ) ) {
-            return new Account( $userId );
+            $account = new $className( $userId );
+            $account->load( $userId );
         }
 
         //get auth'd user, if any, from the session
-        $auth = Account::getAuthenticationService();
+        $auth = static::getAuthenticationService();
         if ( $auth->hasIdentity() ) {
-            $account = Account::get( $auth->getIdentity() );
+            if ( !isset( $userId ) ) {
+                $account = static::get( $auth->getIdentity() );
+                $account->load( $auth->getIdentity() );
+            }
             //If the auth service had an identity stored, assume it is authenticated
-            $account->authenticated = true;
+            $account->authenticated = ( $auth->getIdentity() == $account->userName ) ? true : false;
             return $account;
         } else {
-            return new Account();
+            $account = new $className();
         }
+
+        return $account;
     }
+
+    /**
+     * Deceptively, this is not a singleton, but just a helper to the static get
+     * method for extending classes to define what they are
+     * @return string full namespace of class to instantiate
+     **/
+    abstract protected static function who();
 
     /**
      * Authenticates this user with given credential
@@ -82,9 +95,6 @@ class Account
      * @param mixed $userId User Identifier
      * @throws Exception Unable to get user information
      **/
-    protected function load( $userId )
-    {
-        //implement this
-    }
+    abstract protected function load( $userId );
 
 }
