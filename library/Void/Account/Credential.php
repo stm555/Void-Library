@@ -8,32 +8,24 @@ use \Zend\Authentication\Adapter;
  **/
 Abstract class Credential
 {
-    protected $adapter;
+    /**
+     * Credentials at a minimum must return an adapter suitable
+     * for authentication and primed with the credential's information
+     * @return Adapter Primed Adapter suitable for authentication
+     **/
+    abstract public function getAdapter();
 
     /**
      * Factory Method for getting a credential
      **/
-    public static function get( $credentialType = 'password' )
+    public static function get( $credentialType = 'password', array $params = null )
     {
         switch ( $credentialType )
         {
             case 'password':
-                return new Credential\Password();
+                return new Credential\Password( $params['db'] );
             default:
                 throw new Exception('Invalid credential type');
         }
-    }
-
-    public function setAdapter( Adapter $adapter )
-    {
-        $this->adapter = $adapter;
-    }
-
-    public function getAdapter()
-    {
-        if ( !isset( $this->adapter ) ) {
-            throw new Exception( 'No Adapter set for this credential' );
-        }
-        return $this->adapter;
     }
 }
