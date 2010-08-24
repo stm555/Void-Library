@@ -20,15 +20,19 @@ class Password extends \Void\Account\Credential
     public function getAdapter()
     {
         $adapter = new AuthAdapter( $this->db,'credentials_password',
-                                              'accounts.username',
+                                              'accounts.email',
                                               'credentials_password.password' );
         $adapter->getDbSelect()->join( 'accounts', 'accounts.id = credentials_password.account' );
-        $adapter->setCredential( md5( $this->password ) );
+        $adapter->setCredential( $this->getHashedPassword() );
         return $adapter;
     }
 
     public function setDb( DbAdapter $db )
     {
         $this->db = $db;
+    }
+
+    public function getHashedPassword() {
+        return md5( $this->password );
     }
 }

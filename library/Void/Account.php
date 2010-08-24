@@ -2,15 +2,21 @@
 namespace Void;
 
 use Zend\Authentication\AuthenticationService;
+use Void\Mapper;
 
 Abstract class Account
 {
-    public $userName;
+    public $email;
 
-    public function __construct( $userName = null )
+    /**
+     * @var Mapper Object Mapper for account
+     **/
+    protected static $mapper;
+
+    public function __construct( $email = null )
     {
-        if ( isset( $userName ) ) {
-            $this->userName = $userName;
+        if ( isset( $email ) ) {
+            $this->email = $email;
         }
     }
 
@@ -27,7 +33,12 @@ Abstract class Account
         $className = get_called_class();
         if ( isset( $userId ) ) {
             $account = new $className( $userId );
-            $account->load( $userId );
+            try {
+                $mapper = static::getMapper();
+                $mapper->find( $userId, $account );
+            } catch ( \Exception $e ) {
+                //unable to map account, but whatever.
+            }
             return $account;
         }
 
@@ -51,7 +62,7 @@ Abstract class Account
     {
         $auth = Account::getAuthenticationService();
         $adapter = $credential->getAdapter();
-        $adapter->setIdentity( $this->userName );
+        $adapter->setIdentity( $this->email );
         $result = $auth->authenticate( $adapter );
         if ( !$result->isValid() ) {
             throw new \Exception( array_shift( $result->getMessages() ), $result->getCode() );
@@ -73,14 +84,12 @@ Abstract class Account
     public function isAuthenticated()
     {
         $auth = static::getAuthenticationService();
-        return ( $auth->hasIdentity() && $auth->getIdentity() == $this->userName ) ? true : false;
+        return ( $auth->hasIdentity() && $auth->getIdentity() == $this->email ) ? true : false;
     }
 
     /**
-     * Loads User details from storage
-     * @param mixed $userId User Identifier
-     * @throws Exception Unable to get user information
+     * Retrieves mapper to load account values with
+     * @returns Mapper Object Mapper for account
      **/
-    abstract protected function load( $userId );
-
+    abstract static protected function getMapper();
 }
