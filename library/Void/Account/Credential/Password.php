@@ -7,6 +7,8 @@ class Password extends \Void\Account\Credential
 {
     protected $db;
 
+    public $email;
+
     public $password;
 
     /**
@@ -20,9 +22,10 @@ class Password extends \Void\Account\Credential
     public function getAdapter()
     {
         $adapter = new AuthAdapter( $this->db,'credentials_password',
-                                              'accounts.email',
+                                              'credentials_password.email',
                                               'credentials_password.password' );
         $adapter->getDbSelect()->join( 'accounts', 'accounts.id = credentials_password.account' );
+        $adapter->setIdentity( $this->email );
         $adapter->setCredential( $this->getHashedPassword() );
         return $adapter;
     }

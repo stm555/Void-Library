@@ -4,21 +4,18 @@ namespace Void;
 use Zend\Authentication\AuthenticationService;
 use Void\Mapper;
 
-Abstract class Account
+class Account
 {
+    public $id;
+
     public $email;
 
     /**
      * @var Mapper Object Mapper for account
      **/
-    protected static $mapper;
+    static protected $mapper;
 
-    public function __construct( $email = null )
-    {
-        if ( isset( $email ) ) {
-            $this->email = $email;
-        }
-    }
+    static protected $authService;
 
     /**
      * Grabs a given account.
@@ -29,13 +26,13 @@ Abstract class Account
      * @param mixed $userId User Identifier
      * @return Account Instantiated Account object
      **/
-    public static function get( $userId = null ) {
+    public static function get( $accountId = null ) {
         $className = get_called_class();
-        if ( isset( $userId ) ) {
-            $account = new $className( $userId );
+        if ( isset( $accountId ) ) {
+            $account = new $className();
             try {
                 $mapper = static::getMapper();
-                $mapper->find( $userId, $account );
+                $mapper->find( $accountId, $account );
             } catch ( \Exception $e ) {
                 //unable to map account, but whatever.
             }
@@ -45,9 +42,7 @@ Abstract class Account
         //get auth'd user, if any, from the session
         $auth = static::getAuthenticationService();
         if ( $auth->hasIdentity() ) {
-            if ( !isset( $userId ) ) {
-                return static::get( $auth->getIdentity() );
-            }
+            return static::get( $auth->getIdentity() );
         } else {
             return new $className();
         }
@@ -62,11 +57,12 @@ Abstract class Account
     {
         $auth = Account::getAuthenticationService();
         $adapter = $credential->getAdapter();
-        $adapter->setIdentity( $this->email );
         $result = $auth->authenticate( $adapter );
         if ( !$result->isValid() ) {
             throw new \Exception( array_shift( $result->getMessages() ), $result->getCode() );
         }
+        $storage = $auth->getStorage();
+        $storage->write( $this->id );
     }
 
     public function clearAuthentication()
@@ -78,18 +74,41 @@ Abstract class Account
 
     protected static function getAuthenticationService()
     {
-        return new AuthenticationService();
+        if ( !isset( static::$authService ) ) {
+            static::$authService = new AuthenticationService();
+        }
+        return static::$authService;
+    }
+
+    public static function setAuthenticationService( AuthenticationService $authService )
+    {
+        static::$authService = $authService;
     }
 
     public function isAuthenticated()
     {
         $auth = static::getAuthenticationService();
-        return ( $auth->hasIdentity() && $auth->getIdentity() == $this->email ) ? true : false;
+        return ( $auth->hasIdentity() && $auth->getIdentity() == $this->id ) ? true : false;
     }
 
     /**
      * Retrieves mapper to load account values with
-     * @returns Mapper Object Mapper for account
+     * @returns Void\Mapper Object Mapper for account
      **/
-    abstract static protected function getMapper();
+    static protected function getMapper()
+    {
+        if ( !isset( static::$mapper ) ) {
+            static::$mapper = new Mapper();
+        }
+        return static::$mapper;
+    }
+
+    /**
+     * Sets the Mapper object for the Account object
+     * @param Void\Mapper Mapper object for Account
+     **/
+    static public function setMapper( $mapper )
+    {
+        static::$mapper = $mapper;
+    }
 }
